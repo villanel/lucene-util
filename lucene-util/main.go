@@ -375,10 +375,18 @@ func main() {
 		hostname = hn
 	}
 
-	// Set git SHA if available
-	if cmd := exec.Command("git", "rev-parse", "--short", "HEAD"); cmd.Run() == nil {
-		if output, err := cmd.Output(); err == nil {
-			gitSha = strings.TrimSpace(string(output))
+	// Set git SHA from environment variable first
+	if gitShaFromEnv := os.Getenv("GIT_SHA"); gitShaFromEnv != "" {
+		gitSha = gitShaFromEnv
+	} else if gitShaFromEnv := os.Getenv("GITHUB_SHA"); gitShaFromEnv != "" {
+		// GitHub Actions provides full SHA, use short form
+		gitSha = gitShaFromEnv[:7]
+	} else if gitSha == "unknown" {
+		// Fallback to git command if available
+		if cmd := exec.Command("git", "rev-parse", "--short", "HEAD"); cmd.Run() == nil {
+			if output, err := cmd.Output(); err == nil {
+				gitSha = strings.TrimSpace(string(output))
+			}
 		}
 	}
 
