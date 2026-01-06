@@ -1,0 +1,67 @@
+name: Deploy to Kubernetes and Test
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*.*.*
+
+jobs:
+  deploy-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Set up Kubernetes cluster (kind)
+        uses: helm/kind-action@v1
+
+      - name: Build and load Docker image into kind cluster
+        run: |
+          kind load docker-image ghcr.io/${{ github.repository }}:latest --name chart-testing
+
+      - name: Deploy to Kubernetes
+        run: |
+          # Replace the image placeholder with actual image name
+          sed -i 's|ghcr.io/${{ github.repository }}:latest|ghcr.io/${{ github.repository }}:latest|g' k8s/deployment.yml
+          kubectl apply -f k8s/deployment.yml
+
+      - name: Wait for deployment to be ready
+        run: |
+          kubectl wait --for=condition=available deployment/lucene-shard-analyzer --timeout=300s
+
+      - name: Get service URL
+        id: get-url
+        run: |
+          # For kind, we need to use port forwarding since LoadBalancer type won't get an external IP
+          kubectl port-forward service/lucene-shard-analyzer-service 8080:80 &
+          echo "SERVICE_URL=http://localhost:8080" >> $GITHUB_ENV
+
+      - name: Run health check
+        run: |
+          sleep 5 # Give port forwarding time to start
+          curl -f ${{ env.SERVICE_URL }}/healthz
+
+      - name: Test info endpoint and verify load balancing
+        run: |
+          # Call info endpoint multiple times and check hostnames
+          HOSTNAMES=$(curl -s ${{ env.SERVICE_URL }}/info | jq -r '.hostname')
+          for i in {1..4}; do
+            HOSTNAMES+="\n$(curl -s ${{ env.SERVICE_URL }}/info | jq -r '.hostname')"
+          done
+          # Check if we got responses from different pods
+          UNIQUE_HOSTNAMES=$(echo "$HOSTNAMES" | sort | uniq | wc -l)
+          if [ "$UNIQUE_HOSTNAMES" -lt 2 ]; then
+            echo "Error: Expected responses from at least 2 different pods, got $UNIQUE_HOSTNAMES"
+            exit 1
+          fi
+          echo "Load balancing test passed: got responses from $UNIQUE_HOSTNAMES different pods"
+
+      - name: Test analyze endpoint with sample shard
+        run: |
+          # TODO: Add a sample shard archive and test the analyze endpoint
+          # curl -X POST -F "archive=@sample-shard.tar.gz" ${{ env.SERVICE_URL }}/analyze
