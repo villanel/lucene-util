@@ -49,12 +49,6 @@ jobs:
           kubectl wait deployment/lucene-shard-analyzer --for=condition=available --timeout=300s
           kubectl get pods
 
-      - name: Port forward service
-        run: |
-          kubectl port-forward service/lucene-shard-analyzer-service 8080:80 &
-          sleep 5
-          echo "Port forwarding started"
-
       - name: Run integration tests
         run: |
           chmod +x test/integration-test.sh
@@ -63,7 +57,5 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          # Kill any remaining port-forward processes
-          pkill -f "kubectl port-forward" || true
           # Delete Kubernetes resources
           kubectl delete -f k8s/deployment.yml --ignore-not-found
