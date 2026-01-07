@@ -16,7 +16,6 @@ It is a complex OSS project that demands a lot of my time to maintain and suppor
 K9s will always remain OSS and therefore free! That said, if you feel k9s makes your day to day Kubernetes journey a tad brighter, saves you time and makes you more productive, please consider [sponsoring us!](https://github.com/sponsors/derailed)
 Your donations will go a long way in keeping our servers lights on and beers in our fridge!
 
-**Thank you!**
 
 ---
 
