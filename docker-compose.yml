@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  opensearch:
+    image: opensearchproject/opensearch:latest
+    container_name: opensearch
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+      - plugins.security.disabled=true
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=OpenSearch3.x
+      - cluster.routing.allocation.disk.threshold_enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - ./data:/usr/share/opensearch/data
+
+  producer:
+    image: curlimages/curl:8.7.1
+    container_name: producer
+    depends_on:
+      - opensearch
+    command: >
+      sh -c 'until curl -s http://opensearch:9200 >/dev/null; do sleep 2; done;
+      while true; do
+        curl -s -XPOST "http://opensearch:9200/test/_doc?refresh=true" -H "Content-Type: application/json" \
+          --data-binary "{\"ts\":1700000000,\"message\":\"hello\"}";
+        curl -XPOST "http://opensearch:9200/_flush";
+        echo "";
+        sleep 1;
+      done'
