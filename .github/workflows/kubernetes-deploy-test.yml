@@ -37,10 +37,16 @@ jobs:
       - name: Load Docker image into Kind cluster
         run: kind load docker-image ghcr.io/villanel/lucene-util:${{ steps.git-sha.outputs.sha }}
 
-      - name: Deploy to Kubernetes
+      - name: Deploy to Kubernetes with random replicas
         run: |
-          # Update the deployment with the correct image tag
+          # Generate random replica count between 1 and 10
+          random_replicas=$(shuf -i 1-10 -n 1)
+          echo "Using $random_replicas replicas for deployment"
+          
+          # Update the deployment with the correct image tag and random replica count
           sed -i 's|ghcr.io/villanel/lucene-util:latest|ghcr.io/villanel/lucene-util:${{ steps.git-sha.outputs.sha }}|g' k8s/deployment.yml
+          sed -i "s|replicas: 2|replicas: $random_replicas|g" k8s/deployment.yml
+          
           # Apply all Kubernetes manifests
           kubectl apply -f k8s/deployment.yml
 
