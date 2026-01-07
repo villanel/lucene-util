@@ -37,7 +37,7 @@ jobs:
       - name: Load Docker image into Kind cluster
         run: kind load docker-image ghcr.io/villanel/lucene-util:${{ steps.git-sha.outputs.sha }}
 
-      - name: Deploy to Kubernetes with random replicas
+      - name: Deploy to Kubernetes
         run: |
           # Generate random replica count between 1 and 10
           random_replicas=$(shuf -i 1-10 -n 1)
