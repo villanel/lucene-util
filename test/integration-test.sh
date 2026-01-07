@@ -16,7 +16,7 @@ run_tests_in_new_pod() {
     # Test variables
     local test_pod="integration-test"
     local service="lucene-shard-analyzer-service"
-    local test_zip="/root/devops-interview-project-main/test/test-data/4H0pOK6KT2STRo_TyIBohQ.zip"
+    local test_zip="./test/test-data/4H0pOK6KT2STRo_TyIBohQ.zip"
     
     # Get deployment replica count
     local expected_replicas=$(kubectl get deployment lucene-shard-analyzer -o jsonpath='{.spec.replicas}')
