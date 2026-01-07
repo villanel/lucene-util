@@ -1,0 +1,69 @@
+name: Kubernetes Deployment and Integration Test
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  kubernetes-deploy-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Extract git SHA
+        id: git-sha
+        run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
+        run: |
+          cd ./lucene-util && docker build -t ghcr.io/villanel/lucene-util:${{ steps.git-sha.outputs.sha }} --build-arg GIT_SHA=${{ steps.git-sha.outputs.sha }} .
+
+      - name: Set up Kind
+        uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: kind
+      - name: Load Docker image into Kind cluster
+        run: kind load docker-image ghcr.io/villanel/lucene-util:${{ steps.git-sha.outputs.sha }}
+
+      - name: Deploy to Kubernetes
+        run: |
+          # Update the deployment with the correct image tag
+          sed -i 's|ghcr.io/villanel/lucene-util:latest|ghcr.io/villanel/lucene-util:${{ steps.git-sha.outputs.sha }}|g' k8s/deployment.yml
+          # Apply all Kubernetes manifests
+          kubectl apply -f k8s/deployment.yml
+
+      - name: Wait for deployment to be ready
+        run: |
+          kubectl wait deployment/lucene-shard-analyzer --for=condition=available --timeout=300s
+          kubectl get pods
+
+      - name: Port forward service
+        run: |
+          kubectl port-forward service/lucene-shard-analyzer-service 8080:80 &
+          sleep 5
+          echo "Port forwarding started"
+
+      - name: Run integration tests
+        run: |
+          chmod +x test/integration-test.sh
+          test/integration-test.sh
+
+      - name: Cleanup
+        if: always()
+        run: |
+          # Kill any remaining port-forward processes
+          pkill -f "kubectl port-forward" || true
+          # Delete Kubernetes resources
+          kubectl delete -f k8s/deployment.yml --ignore-not-found

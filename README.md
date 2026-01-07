@@ -75,3 +75,4 @@ nodes/0/indices/<INDEX_UUID>/
       _0.cfs
       _0.si
 ```
+tre
