@@ -103,12 +103,7 @@ else
     analyze_ok=1
 fi
 
-echo -e "\n" >> /test_results.txt
-if [ "$analyze_ok" -eq 0 ]; then
-    echo "OK: $file_path" >> /test_results.txt
-else
-    echo "FAILED: $file_path" >> /test_results.txt
-fi
+echo -e "\n"
 
 # Use exit instead of return since we're running as a script, not a function
 exit $analyze_ok
@@ -128,7 +123,7 @@ echo "Expected replicas: $EXPECTED_REPLICAS"
 echo "Actual running pods: $ACTUAL_PODS"
 
 # Load balancing test - make enough requests to ensure all pods are hit
-total_requests=$((ACTUAL_PODS * 3))  # 3 requests per pod
+total_requests=$((ACTUAL_PODS * 6))  #  requests per pod
 echo "Making $total_requests requests to verify load balancing..."
 
 for i in $(seq 1 $total_requests); do
@@ -167,7 +162,7 @@ EOF
     log "Processing files in $test_data_dir..."
     local test_files=($(ls "$test_data_dir"))
     local total_files=${#test_files[@]}
-    local success_count=0
+    local analyze_success_count=0
     
     log "Found $total_files test files to analyze"
     
@@ -180,16 +175,24 @@ EOF
         # Copy test file to pod
         kubectl cp "$full_path" "$test_pod:$pod_path" > /dev/null 2>&1
         
-        # Run analyze test on this file
-        kubectl exec "$test_pod" -- bash -c "/test_analyze.sh '$pod_path'"
+        # Run analyze test on this file, but don't write to results file yet
+        analyze_output=$(kubectl exec "$test_pod" -- bash -c "/test_analyze.sh '$pod_path'")
         
-        if [ $? -eq 0 ]; then
-            success_count=$((success_count+1))
+        if echo "$analyze_output" | grep -q "✓ Analysis succeeded"; then
+            analyze_success_count=$((analyze_success_count+1))
         fi
         
         # Clean up test file
         kubectl exec "$test_pod" -- rm "$pod_path" > /dev/null 2>&1
     done
+    
+    # Write analyze test results as a single entry
+    log "Writing analyze test results as a single entry..."
+    if [ $analyze_success_count -eq $total_files ]; then
+        kubectl exec "$test_pod" -- bash -c "echo 'OK: All Analyze Tests' >> /test_results.txt"
+    else
+        kubectl exec "$test_pod" -- bash -c "echo 'FAILED: Analyze Tests - $analyze_success_count/$total_files files passed' >> /test_results.txt"
+    fi
     
     # Run load balancing test
     log "Running load balancing test..."

@@ -28,14 +28,14 @@ jobs:
 
       - name: Build Docker image
         run: |
-          cd ./lucene-util && docker build -t ghcr.io/villanel/lucene-util:${{ steps.git-sha.outputs.sha }} --build-arg GIT_SHA=${{ steps.git-sha.outputs.sha }} .
+          cd ./lucene-analyzer && docker build -t ghcr.io/villanel/lucene-analyzer:${{ steps.git-sha.outputs.sha }} --build-arg GIT_SHA=${{ steps.git-sha.outputs.sha }} .
 
       - name: Set up Kind
         uses: helm/kind-action@v1.10.0
         with:
           cluster_name: kind
       - name: Load Docker image into Kind cluster
-        run: kind load docker-image ghcr.io/villanel/lucene-util:${{ steps.git-sha.outputs.sha }}
+        run: kind load docker-image ghcr.io/villanel/lucene-analyzer:${{ steps.git-sha.outputs.sha }}
 
       - name: Deploy to Kubernetes
         run: |
@@ -44,7 +44,7 @@ jobs:
           echo "Using $random_replicas replicas for deployment"
           
           # Update the deployment with the correct image tag and random replica count
-          sed -i 's|ghcr.io/villanel/lucene-util:latest|ghcr.io/villanel/lucene-util:${{ steps.git-sha.outputs.sha }}|g' k8s/deployment.yml
+          sed -i 's|ghcr.io/villanel/lucene-analyzer:latest|ghcr.io/villanel/lucene-analyzer:${{ steps.git-sha.outputs.sha }}|g' k8s/deployment.yml
           sed -i "s|replicas: 2|replicas: $random_replicas|g" k8s/deployment.yml
           
           # Apply all Kubernetes manifests

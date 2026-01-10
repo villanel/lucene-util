@@ -29,7 +29,7 @@ jobs:
           go-version: '1.24'
 
       - name: Run tests
-        working-directory: ./lucene-util
+        working-directory: ./lucene-analyzer
         run: |
           go test -v ./...
 
@@ -74,7 +74,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: "{{defaultContext}}:lucene-util"
+          context: "{{defaultContext}}:lucene-analyzer"
           # dockerfile: Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}

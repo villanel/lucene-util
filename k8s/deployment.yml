@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: lucene-shard-analyzer
-        image: ghcr.io/villanel/lucene-util:latest
+        image: ghcr.io/villanel/lucene-analyzer:latest
         ports:
         - containerPort: 8080
         resources:
