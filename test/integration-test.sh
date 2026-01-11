@@ -178,6 +178,33 @@ EOF
         # Run analyze test on this file, but don't write to results file yet
         analyze_output=$(kubectl exec "$test_pod" -- bash -c "/test_analyze.sh '$pod_path'")
         
+        # Directly output the analyze result
+        echo "$analyze_output"
+        
+        # Extract and display the summary in the format requested
+        if echo "$analyze_output" | grep -q "total_segments"; then
+            # Extract summary
+            total_segments=$(echo "$analyze_output" | jq -r ".total_segments" 2>/dev/null || echo "N/A")
+            total_docs=$(echo "$analyze_output" | jq -r ".total_docs" 2>/dev/null || echo "N/A")
+            total_deleted_docs=$(echo "$analyze_output" | jq -r ".total_deleted_docs" 2>/dev/null || echo "N/A")
+            total_soft_deleted_docs=$(echo "$analyze_output" | jq -r ".total_soft_deleted_docs" 2>/dev/null || echo "N/A")
+            
+            echo -e "\n--- Analysis Summary ---
+\"total_segments\": $total_segments,
+\"total_docs\": $total_docs,
+\"total_deleted_docs\": $total_deleted_docs,
+\"total_soft_deleted_docs\": $total_soft_deleted_docs\nSegment names:"
+            
+            # Extract and display segment names
+            if [ "$total_segments" -gt 0 ] 2>/dev/null; then
+                echo "$analyze_output" | jq -r ".segments[].name" 2>/dev/null | while read -r seg_name; do
+                    echo "  - $seg_name"
+                done
+            fi
+            
+            echo -e "\n"
+        fi
+        
         if echo "$analyze_output" | grep -q "✓ Analysis succeeded"; then
             analyze_success_count=$((analyze_success_count+1))
         fi

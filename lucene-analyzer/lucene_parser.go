@@ -290,8 +290,8 @@ func buildReport(indexDir string) (*Report, error) {
 	}
 	return rep, nil
 }
-
-// parseSegmentSI 读取并解析 .si 文件 (LittleEndian 用于文档数)
+// .si: Header, SegVersion, SegSize, IsCompoundFile, Diagnostics, Files, Attributes, IndexSort, Footer
+// parseSegmentSI 读取并解析 .si 文件 
 func parseSegmentSI(indexDir, segName string) (int32, bool, map[string]string, error) {
 	path := filepath.Join(indexDir, segName+".si")
 	f, err := os.Open(path)
@@ -308,7 +308,7 @@ func parseSegmentSI(indexDir, segName string) (int32, bool, map[string]string, e
 	readExactly(r, 16)
 	readString(r)
 
-	// 读取版本和可选版本 (LittleEndian)
+	// 读取版本和可选版本 
 	var v Version
 	binary.Read(r, binary.LittleEndian, &v)
 	var hasMin byte
@@ -324,7 +324,7 @@ func parseSegmentSI(indexDir, segName string) (int32, bool, map[string]string, e
 
 	return docCount, isCompound == 1, diag, nil
 }
-
+// segments_N: Header, LuceneVersion, Version, NameCounter, SegCount, MinSegmentLuceneVersion, <SegName, SegID, SegCodec, DelGen, DeletionCount, FieldInfosGen, DocValuesGen, UpdatesFiles>SegCount, CommitUserData, Footer
 // parseSegmentsFile 解析 segments_N 文件并提取软删除数量
 func parseSegmentsFile(indexDir, segFile string) ([]SegInfoSummary, map[string]string, error) {
 	f, err := os.Open(filepath.Join(indexDir, segFile))
