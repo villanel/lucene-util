@@ -464,7 +464,7 @@ ff ff ff ff ff ff ff ff: DelGen。-1 表示没有挂起的删除（这是 Long �
 
 bb 0e ... aa: Segment ID (16 字节)。必须与 segments_7y8 中记录的 ID 完全一致。
 
-28: Suffix 长度 (40)。由于这个段可能比较复杂，Suffix 较长。
+28: Suffix 长度 (40)。
 
 2. 段核心属性 (Lucene 9.0+ 格式)
 从偏移量 0x0000002d 开始，注意这里进入了 Little Endian (小端序) 区域：
