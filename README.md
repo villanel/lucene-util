@@ -34,7 +34,7 @@
 ### 使用Docker运行
 
 ```bash
-docker run -p 8080:8080 ghcr.io/your-username/lucene-shard-analyzer:latest
+docker run -p 8080:8080 ghcr.io/villanel/lucene-shard-analyzer:latest
 ```
 
 ### 本地运行
